@@ -178,7 +178,13 @@ export async function testMetaConnection(actorId: string) {
       signal: AbortSignal.timeout(15_000),
     });
     const meBody = (await me.json()) as { id?: string; name?: string; error?: { message: string } };
-    if (!me.ok || meBody.error) throw new Error(`Token check failed (HTTP ${me.status})`);
+    if (!me.ok || meBody.error) {
+  throw new Error(
+    `Token check failed (HTTP ${me.status}): ${
+      meBody.error?.message ?? "Unknown Meta API error"
+    }`,
+  );
+}
     details.page = { id: meBody.id, name: meBody.name };
     const forms = await fetch(
       `${GRAPH}/${meBody.id}/leadgen_forms?fields=id,name,status&limit=25`,
@@ -188,10 +194,13 @@ export async function testMetaConnection(actorId: string) {
       data?: { id: string; name: string; status: string }[];
       error?: { message: string };
     };
-    if (!forms.ok || fb.error)
-      throw new Error(
-        `Lead form access failed (HTTP ${forms.status}); verify leads_retrieval and pages_manage_ads`,
-      );
+    if (!forms.ok || fb.error) {
+  throw new Error(
+    `Lead form access failed (HTTP ${forms.status}): ${
+      fb.error?.message ?? "Unknown Meta API error"
+    }`,
+  );
+}
     details.forms = (fb.data ?? []).map((f) => ({ id: f.id, name: f.name, status: f.status }));
     if (missing.length)
       throw new Error(`Graph access works, but webhook secrets are missing: ${missing.join(", ")}`);
