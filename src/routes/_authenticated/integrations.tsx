@@ -65,17 +65,20 @@ function Integrations() {
     },
   });
   const s = status.data;
-  const configured = s && s.verifyToken && s.appSecret && s.pageToken;
+  const configured = !!(s?.verifyToken && s?.appSecret && s?.pageToken);
+  const diagnostic = s?.diagnostic;
   const processed = events.data?.some((e) => e.status === "processed");
   const lastOk = check.data?.ok === true;
   const connected = configured && lastOk;
-  const label = !s
-    ? "Checking…"
-    : !connected
-      ? "Not connected"
-      : processed
-        ? "Connected — leads received"
-        : "Connected — no leads received yet";
+  const label = status.isPending
+    ? "Checking..."
+    : status.isError
+      ? "Status check failed"
+      : !connected
+        ? "Not connected"
+        : processed
+          ? "Connected — leads received"
+          : "Connected — no leads received yet";
   const ev = events.data ?? [];
   const count = (st: string) => ev.filter((e) => e.status === st).length;
   const lastLead = ev.find((e) => e.status === "processed");
@@ -122,11 +125,59 @@ function Integrations() {
           <h2 className="text-lg font-semibold">Meta Lead Ads (Facebook & Instagram)</h2>
           <Badge variant={configured ? (processed ? "success" : "warm") : "muted"}>{label}</Badge>
         </div>
+        {status.isError && (
+          <div className="mt-3 rounded-md border border-destructive p-3 text-sm text-destructive">
+            Status request failed:{" "}
+            {status.error instanceof Error ? status.error.message : "Unknown server error"}
+          </div>
+        )}
+
         <ul className="mt-3 space-y-1 text-sm">
-          <li>Verify token (META_VERIFY_TOKEN): {s?.verifyToken ? "set" : "missing"}</li>
-          <li>App secret (META_APP_SECRET): {s?.appSecret ? "set" : "missing"}</li>
-          <li>Page access token (META_PAGE_ACCESS_TOKEN): {s?.pageToken ? "set" : "missing"}</li>
+          <li>
+            Verify token:{" "}
+            {status.isPending
+              ? "checking..."
+              : status.isError
+                ? "unknown"
+                : s?.verifyToken
+                  ? "set"
+                  : "missing"}
+          </li>
+          <li>
+            App secret:{" "}
+            {status.isPending
+              ? "checking..."
+              : status.isError
+                ? "unknown"
+                : s?.appSecret
+                  ? "set"
+                  : "missing"}
+          </li>
+          <li>
+            Page access token:{" "}
+            {status.isPending
+              ? "checking..."
+              : status.isError
+                ? "unknown"
+                : s?.pageToken
+                  ? "set"
+                  : "missing"}
+          </li>
         </ul>
+
+        {diagnostic && (
+          <details className="mt-3 rounded-md border p-3 text-sm">
+            <summary className="cursor-pointer font-medium">Server environment diagnostics</summary>
+
+            <ul className="mt-2 space-y-1">
+              <li>Process exists: {String(diagnostic.processExists)}</li>
+              <li>Process environment exists: {String(diagnostic.processEnvExists)}</li>
+              <li>Verify token detected: {String(diagnostic.verifyTokenPresent)}</li>
+              <li>App secret detected: {String(diagnostic.appSecretPresent)}</li>
+              <li>Page token detected: {String(diagnostic.pageTokenPresent)}</li>
+            </ul>
+          </details>
+        )}
         <div className="mt-4 grid gap-3 sm:grid-cols-4">
           {[
             ["Processed", count("processed")],

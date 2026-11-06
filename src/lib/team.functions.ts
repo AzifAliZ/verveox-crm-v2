@@ -100,10 +100,31 @@ export const metaIntegrationStatus = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await assertAdmin(context.supabase as any, context.userId);
+
+    const hasProcess = typeof process !== "undefined";
+    const env = hasProcess ? process.env : undefined;
+
+    const verifyToken =
+      typeof env?.["META_VERIFY_TOKEN"] === "string" && env["META_VERIFY_TOKEN"].trim().length > 0;
+
+    const appSecret =
+      typeof env?.["META_APP_SECRET"] === "string" && env["META_APP_SECRET"].trim().length > 0;
+
+    const pageToken =
+      typeof env?.["META_PAGE_ACCESS_TOKEN"] === "string" &&
+      env["META_PAGE_ACCESS_TOKEN"].trim().length > 0;
+
     return {
-      verifyToken: !!process.env["META_VERIFY_TOKEN"],
-      appSecret: !!process.env["META_APP_SECRET"],
-      pageToken: !!process.env["META_PAGE_ACCESS_TOKEN"],
+      verifyToken,
+      appSecret,
+      pageToken,
+      diagnostic: {
+        processExists: hasProcess,
+        processEnvExists: !!env,
+        verifyTokenPresent: verifyToken,
+        appSecretPresent: appSecret,
+        pageTokenPresent: pageToken,
+      },
     };
   });
 
