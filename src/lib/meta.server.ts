@@ -163,54 +163,124 @@ export const META_FIELD_MAP: Record<string, string[]> = {
 };
 
 /** Real connectivity test against the Graph API using the server-side Page token. */
+
 export async function testMetaConnection(actorId: string) {
   const token = process.env["META_PAGE_ACCESS_TOKEN"];
-  const missing = ["META_VERIFY_TOKEN", "META_APP_SECRET", "META_PAGE_ACCESS_TOKEN"].filter(
-    (k) => !process.env[k],
-  );
+
+  const missing = [
+    "META_VERIFY_TOKEN",
+    "META_APP_SECRET",
+    "META_PAGE_ACCESS_TOKEN",
+  ].filter((k) => !process.env[k]);
+
   const details: Record<string, unknown> = { missing };
-  let ok = false,
-    error: string | null = null;
+
+  let ok = false;
+  let error: string | null = null;
+
   try {
-    if (!token) throw new Error("Page access token is not configured");
+    if (!token) {
+      throw new Error("Page access token is not configured");
+    }
+
     const me = await fetch(`${GRAPH}/me?fields=id,name`, {
       headers: { Authorization: `Bearer ${token}` },
       signal: AbortSignal.timeout(15_000),
     });
-    const meBody = (await me.json()) as { id?: string; name?: string; error?: { message: string } };
+
+    const meBody = (await me.json()) as {
+      id?: string;
+      name?: string;
+      error?: { message: string };
+    };
+
     if (!me.ok || meBody.error) {
-  throw new Error(
-    `Token check failed (HTTP ${me.status}): ${
-      meBody.error?.message ?? "Unknown Meta API error"
-    }`,
-  );
-}
-    details.page = { id: meBody.id, name: meBody.name };
+      throw new Error(
+        `Token check failed (HTTP ${me.status}): ${
+          meBody.error?.message ?? "Unknown Meta API error"
+        }`,
+      );
+    }
+
+    details.page = {
+      id: meBody.id,
+      name: meBody.name,
+    };
+
     const forms = await fetch(
       `${GRAPH}/${meBody.id}/leadgen_forms?fields=id,name,status&limit=25`,
-      { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(15_000) },
+      {
+        headers: { Authorization: `Bearer ${token}` },
+        signal: AbortSignal.timeout(15_000),
+      },
     );
+
     const fb = (await forms.json()) as {
       data?: { id: string; name: string; status: string }[];
       error?: { message: string };
     };
+
     if (!forms.ok || fb.error) {
-  throw new Error(
-    `Lead form access failed (HTTP ${forms.status}): ${
-      fb.error?.message ?? "Unknown Meta API error"
-    }`,
-  );
-}
-    details.forms = (fb.data ?? []).map((f) => ({ id: f.id, name: f.name, status: f.status }));
-    if (missing.length)
-      throw new Error(`Graph access works, but webhook secrets are missing: ${missing.join(", ")}`);
+      throw new Error(
+        `Lead form access failed (HTTP ${forms.status}): ${
+          fb.error?.message ?? "Unknown Meta API error"
+        }`,
+      );
+    }
+
+    details.forms = (fb.data ?? []).map((f) => ({
+      id: f.id,
+      name: f.name,
+      status: f.status,
+    }));
+
+    if (missing.length) {
+      throw new Error(
+        `Graph access works, but webhook secrets are missing: ${missing.join(", ")}`,
+      );
+    }
+
     ok = true;
   } catch (e) {
     error = (e as Error).message.slice(0, 1000);
   }
+
+  // Read-only Supabase admin query diagnostic
+  const { data: adminTest, error: adminError } = await supabaseAdmin
+    .from("integration_checks")
+    .select("id")
+    .limit(1);
+
+  console.info("[SUPABASE ADMIN QUERY TEST]", {
+    success: !adminError,
+    errorCode: adminError?.code ?? null,
+    errorMessage: adminError?.message ?? null,
+    rowsReturned: adminTest?.length ?? 0,
+  });
+
+  // Existing integration check insert
   const { error: saveErr } = await supabaseAdmin
     .from("integration_checks")
-    .insert({ provider: "meta", ok, details: details as never, error, checked_by: actorId });
-  if (saveErr) throw new Error(saveErr.message);
+    .insert({
+      provider: "meta",
+      ok,
+      details: details as never,
+      error,
+      checked_by: actorId,
+    });
+
+  if (saveErr) {
+    console.error("[META CHECK SAVE ERROR]", {
+      code: saveErr.code,
+      message: saveErr.message,
+      details: saveErr.details,
+      hint: saveErr.hint,
+    });
+
+    throw new Error(
+      `Supabase save failed (${saveErr.code}): ${saveErr.message}`,
+    );
+  }
+
   return { ok, error, details };
 }

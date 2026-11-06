@@ -35,6 +35,18 @@ function createSupabaseFetch(supabaseKey: string): typeof fetch {
 function createSupabaseAdminClient() {
   const SUPABASE_URL = process.env["SUPABASE_URL"];
   const SUPABASE_SERVICE_ROLE_KEY = process.env["SUPABASE_SERVICE_ROLE_KEY"];
+  console.info("[SUPABASE ADMIN DIAGNOSTIC]", {
+  urlPresent: !!SUPABASE_URL,
+  secretPresent: !!SUPABASE_SERVICE_ROLE_KEY,
+  secretType: SUPABASE_SERVICE_ROLE_KEY?.startsWith("sb_secret_")
+    ? "new_secret"
+    : SUPABASE_SERVICE_ROLE_KEY?.startsWith("eyJ")
+      ? "legacy_jwt"
+      : "unknown",
+  projectRef: SUPABASE_URL?.match(
+    /^https:\/\/([^.]+)\.supabase\.co$/,
+  )?.[1] ?? "unrecognized",
+});
 
   if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
     const missing = [
@@ -46,16 +58,26 @@ function createSupabaseAdminClient() {
     throw new Error(message);
   }
 
-  return createClient<Database>(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
-    global: {
-      fetch: createSupabaseFetch(SUPABASE_SERVICE_ROLE_KEY),
-    },
-    auth: {
-      storage: undefined,
-      persistSession: false,
-      autoRefreshToken: false,
-    },
-  });
+  console.info("[SUPABASE ADMIN CLIENT CREATED]", {
+  secretPresent: !!SUPABASE_SERVICE_ROLE_KEY,
+  secretType: SUPABASE_SERVICE_ROLE_KEY.startsWith("sb_secret_")
+    ? "new_secret"
+    : "other",
+  projectRef:
+    SUPABASE_URL.match(/^https:\/\/([^.]+)\.supabase\.co$/)?.[1] ??
+    "unrecognized",
+});
+
+return createClient<Database>(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+  global: {
+    fetch: createSupabaseFetch(SUPABASE_SERVICE_ROLE_KEY),
+  },
+  auth: {
+    storage: undefined,
+    persistSession: false,
+    autoRefreshToken: false,
+  },
+});
 }
 
 let _supabaseAdmin: ReturnType<typeof createSupabaseAdminClient> | undefined;
