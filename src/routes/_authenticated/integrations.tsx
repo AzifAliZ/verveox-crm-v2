@@ -65,8 +65,14 @@ function Integrations() {
     },
   });
   const s = status.data;
-  const configured = !!(s?.verifyToken && s?.appSecret && s?.pageToken);
-  const diagnostic = s?.diagnostic;
+  const processEnv = s?.processEnv;
+  const diagnostic = s?.runtime;
+
+  const configured = !!(
+  processEnv?.META_VERIFY_TOKEN &&
+  processEnv?.META_APP_SECRET &&
+  processEnv?.META_PAGE_ACCESS_TOKEN
+);
   const processed = events.data?.some((e) => e.status === "processed");
   const lastOk = check.data?.ok === true;
   const connected = configured && lastOk;
@@ -139,7 +145,7 @@ function Integrations() {
               ? "checking..."
               : status.isError
                 ? "unknown"
-                : s?.verifyToken
+                : processEnv?.META_VERIFY_TOKEN
                   ? "set"
                   : "missing"}
           </li>
@@ -149,7 +155,7 @@ function Integrations() {
               ? "checking..."
               : status.isError
                 ? "unknown"
-                : s?.appSecret
+                : processEnv?.META_APP_SECRET
                   ? "set"
                   : "missing"}
           </li>
@@ -159,25 +165,38 @@ function Integrations() {
               ? "checking..."
               : status.isError
                 ? "unknown"
-                : s?.pageToken
+                : processEnv?.META_PAGE_ACCESS_TOKEN
                   ? "set"
                   : "missing"}
           </li>
         </ul>
 
-        {diagnostic && (
-          <details className="mt-3 rounded-md border p-3 text-sm">
-            <summary className="cursor-pointer font-medium">Server environment diagnostics</summary>
+        {diagnostic && processEnv && (
+  <details className="mt-3 rounded-md border p-3 text-sm">
+    <summary className="cursor-pointer font-medium">
+      Server environment diagnostics
+    </summary>
 
-            <ul className="mt-2 space-y-1">
-              <li>Process exists: {String(diagnostic.processExists)}</li>
-              <li>Process environment exists: {String(diagnostic.processEnvExists)}</li>
-              <li>Verify token detected: {String(diagnostic.verifyTokenPresent)}</li>
-              <li>App secret detected: {String(diagnostic.appSecretPresent)}</li>
-              <li>Page token detected: {String(diagnostic.pageTokenPresent)}</li>
-            </ul>
-          </details>
-        )}
+    <ul className="mt-2 space-y-1">
+      <li>Process exists: {String(diagnostic.processExists)}</li>
+      <li>
+        Process environment exists: {String(diagnostic.processEnvExists)}
+      </li>
+      <li>
+        META_VERIFY_TOKEN detected:{" "}
+        {String(processEnv.META_VERIFY_TOKEN)}
+      </li>
+      <li>
+        META_APP_SECRET detected:{" "}
+        {String(processEnv.META_APP_SECRET)}
+      </li>
+      <li>
+        META_PAGE_ACCESS_TOKEN detected:{" "}
+        {String(processEnv.META_PAGE_ACCESS_TOKEN)}
+      </li>
+    </ul>
+  </details>
+)}
         <div className="mt-4 grid gap-3 sm:grid-cols-4">
           {[
             ["Processed", count("processed")],

@@ -101,33 +101,33 @@ export const metaIntegrationStatus = createServerFn({ method: "GET" })
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await assertAdmin(context.supabase as any, context.userId);
 
-    const hasProcess = typeof process !== "undefined";
-    const env = hasProcess ? process.env : undefined;
+    const processEnv =
+      typeof process !== "undefined" ? process.env : undefined;
 
-    const verifyToken =
-      typeof env?.["META_VERIFY_TOKEN"] === "string" && env["META_VERIFY_TOKEN"].trim().length > 0;
+    const keys = [
+      "META_VERIFY_TOKEN",
+      "META_APP_SECRET",
+      "META_PAGE_ACCESS_TOKEN",
+    ] as const;
 
-    const appSecret =
-      typeof env?.["META_APP_SECRET"] === "string" && env["META_APP_SECRET"].trim().length > 0;
-
-    const pageToken =
-      typeof env?.["META_PAGE_ACCESS_TOKEN"] === "string" &&
-      env["META_PAGE_ACCESS_TOKEN"].trim().length > 0;
+    const check = (source: Record<string, unknown> | undefined) =>
+      Object.fromEntries(
+        keys.map((key) => [
+          key,
+          typeof source?.[key] === "string" &&
+            (source[key] as string).trim().length > 0,
+        ]),
+      );
 
     return {
-      verifyToken,
-      appSecret,
-      pageToken,
-      diagnostic: {
-        processExists: hasProcess,
-        processEnvExists: !!env,
-        verifyTokenPresent: verifyToken,
-        appSecretPresent: appSecret,
-        pageTokenPresent: pageToken,
+      processEnv: check(processEnv),
+      runtime: {
+        processExists: typeof process !== "undefined",
+        processEnvExists: !!processEnv,
       },
     };
   });
-
+  
 export const reprocessMetaEvent = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => z.object({ eventId: z.string().uuid() }).parse(d))
