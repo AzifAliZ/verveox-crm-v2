@@ -47,6 +47,25 @@ function isH3SwallowedErrorBody(body: string): boolean {
 export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
     try {
+      const runtimeEnv =
+  env && typeof env === "object"
+    ? (env as Record<string, unknown>)
+    : undefined;
+
+const hasValue = (source: Record<string, unknown> | undefined, key: string) =>
+  typeof source?.[key] === "string" &&
+  (source[key] as string).trim().length > 0;
+
+console.info("[META ENV DIAGNOSTIC]", {
+  runtimeEnvExists: !!runtimeEnv,
+  runtimeVerifyToken: hasValue(runtimeEnv, "META_VERIFY_TOKEN"),
+  runtimeAppSecret: hasValue(runtimeEnv, "META_APP_SECRET"),
+  runtimePageToken: hasValue(runtimeEnv, "META_PAGE_ACCESS_TOKEN"),
+  processVerifyToken: hasValue(
+    typeof process !== "undefined" ? process.env : undefined,
+    "META_VERIFY_TOKEN",
+  ),
+});
       const handler = await getServerEntry();
       const response = await handler.fetch(request, env, ctx);
       return await normalizeCatastrophicSsrResponse(response);
