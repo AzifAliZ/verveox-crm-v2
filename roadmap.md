@@ -1,0 +1,29 @@
+# Verveox CRM roadmap
+
+- [ ] Add lease-safe Meta retry/backoff, stuck recovery, dead-letter inspection and processing monitoring
+- [ ] Add secure password rotation with global session revocation and verify provider support
+- [ ] Schedule expired transfer cleanup and document backup/restore; verify isolated restore and clean migration replay where infrastructure permits
+- [ ] Verify manager cross-team, inactive account, concurrent administrator and webhook race protections; run full tests and security checks
+- [x] Inspect complete scan findings, repair confirmed security vulnerabilities, rerun basic/dependency checks and tests, and report unresolved risks
+- [ ] Post-save deep rescan of November 4 security fixes — requires a new scan after saved changes; completed scan covered pre-edit snapshot
+- [x] Implement secure CSV/Excel upload, server dry-run, resumable import batches, error reports and private selected/filtered exports with history
+- [x] Verify invalid files, duplicates, persistence, authorization and spreadsheet injection protection
+- [x] Complete persistent task editing, history, assignment and dashboard task views
+- [x] Activate and verify reliable internal reminder processing and role-scoped notifications
+- [x] Complete configurable scoring, override history, independent priority and filtered Kanban with safe stage updates
+- [x] Verify scoring boundaries, ad-click exclusion, persistence, stage history and failed-move recovery
+- [x] Complete Leads workflows, reviewed merges, attribution preservation and change timeline
+- [x] Test lead create/edit/filter/page/tag/bulk/archive/restore/merge and unauthorized access
+- [x] Audit live schema, migrations, indexes, relationships and every RLS policy
+- [x] Harden access-control and tested production CRUD issues; add regression tests
+- [x] Verify admin/employee/manager/inactive persistence and isolation; report in SECURITY-AUDIT.md
+- [x] Durable locked/resumable imports and private server-generated exports with expiring links (bounded to 5,000 rows)
+- [ ] Unbounded asynchronous export worker and Meta scheduled retry/stuck-job recovery — outside this bounded transfer implementation
+- [ ] Isolated migration replay, concurrent last-admin tests, two-team assignment matrix, backup restore — not verified; requires isolated fixtures/infrastructure
+- [x] Phase 1: shell, auth, schema, roles/RLS, lead CRUD, search/filters, profile, dashboard
+- [x] Phase 2: pipeline, scoring, activities, follow-ups, tags, bulk ops
+- [x] Phase 3: CSV/Excel import & export, campaigns, reports
+- [x] Phase 4: Meta webhook, Graph API fetch, manual retries, integration health (live connection unverified)
+- [ ] Meta credentials (META_VERIFY_TOKEN, META_APP_SECRET, META_PAGE_ACCESS_TOKEN) — waiting on the user's Meta app
+- [x] Hourly database-only reminders active; internal delivery and retry idempotency verified without publishing
+- [ ] CV uploads to private storage; logo upload — outside this transfer implementation
